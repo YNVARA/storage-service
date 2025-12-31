@@ -1,0 +1,30 @@
+{
+    "name": "storage-service",
+    "author": {
+        "name": "yudha ginong pratidina",
+        "email": "dev.yudhaginongpratidina@gmail.com"
+    },
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "dev": "bun --watch index.ts",
+        "build": "bun build index.ts --target=node --outdir ./dist && javascript-obfuscator dist --output dist && npx terser dist/index.js -c -m -o dist/index.min.js",
+        "start": "bun run ./dist/index.min.js"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@types/express": "^5.0.6",
+        "@types/pg": "^8.16.0"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "dotenv": "^17.2.3",
+        "express": "^5.2.1",
+        "express-rate-limit": "^8.2.1",
+        "javascript-obfuscator": "^5.1.0",
+        "pg": "^8.16.3"
+    }
+}
