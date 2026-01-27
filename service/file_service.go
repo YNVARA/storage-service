@@ -23,7 +23,7 @@ func NewFileService(storage domain.FileStorage) *FileService {
 	return &FileService{storage: storage}
 }
 
-func (s *FileService) ProcessUpload(c *fiber.Ctx, cfg UploadConfig) ([]string, error) {
+func (s *FileService) ProcessUpload(c *fiber.Ctx, cfg UploadConfig) ([]domain.FileInfo, error) {
 	form, err := c.MultipartForm()
 	if err != nil {
 		return nil, fmt.Errorf("failed_to_parse_form")
@@ -33,26 +33,24 @@ func (s *FileService) ProcessUpload(c *fiber.Ctx, cfg UploadConfig) ([]string, e
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no_files_found_in_key_%s", cfg.FormKey)
 	}
-
 	if cfg.MaxFiles > 0 && len(files) > cfg.MaxFiles {
 		return nil, fmt.Errorf("too_many_files_max_%d", cfg.MaxFiles)
 	}
 
-	var uploadedFiles []string
+	var uploadedFiles []domain.FileInfo
 	for _, file := range files {
-		// Validasi Ukuran
+		// Validasi Size
 		if file.Size > cfg.MaxFileSize {
-			return nil, fmt.Errorf("file_%s_too_large_max_%dMB", file.Filename, cfg.MaxFileSize/(1024*1024))
+			return nil, fmt.Errorf("file_%s_too_large", file.Filename)
 		}
 
-		// Sniff MIME Type
+		// Deep MIME Sniffing
 		f, _ := file.Open()
 		buf := make([]byte, 512)
 		f.Read(buf)
 		f.Close()
 		contentType := http.DetectContentType(buf)
 
-		// Validasi Allowed Types
 		isValid := false
 		for _, t := range cfg.AllowedTypes {
 			if t == contentType {
@@ -60,16 +58,16 @@ func (s *FileService) ProcessUpload(c *fiber.Ctx, cfg UploadConfig) ([]string, e
 				break
 			}
 		}
-
 		if !isValid {
 			return nil, fmt.Errorf("type_%s_not_allowed_for_%s", contentType, file.Filename)
 		}
 
-		name, err := s.storage.Save(file)
+		// Simpan
+		info, err := s.storage.Save(file)
 		if err != nil {
 			return nil, err
 		}
-		uploadedFiles = append(uploadedFiles, name)
+		uploadedFiles = append(uploadedFiles, info)
 	}
 	return uploadedFiles, nil
 }

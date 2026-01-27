@@ -5,6 +5,7 @@ import (
 	"storage-service/handler"
 	"storage-service/infrastructure"
 	"storage-service/service"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -16,7 +17,10 @@ func main() {
 		log.Println("Warning: .env file not found, using system environment or fallbacks")
 	}
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		BodyLimit:   50 * 1024 * 1024, // Sesuaikan jika total 100 file sangat besar
+		ReadTimeout: 60 * time.Second, // Beri waktu lebih lama untuk upload
+	})
 
 	storage := infrastructure.NewLocalStorage("./uploads")
 	svc := service.NewFileService(storage)
