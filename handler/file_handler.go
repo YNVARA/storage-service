@@ -53,6 +53,21 @@ func (h *FileHandler) GetFile(c *fiber.Ctx) error {
 	return c.SendFile("./uploads/" + c.Params("filename"))
 }
 
+func (h *FileHandler) GetAllFiles(c *fiber.Ctx) error {
+	files, err := h.service.GetAllFiles()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"error":   "Gagal mengambil daftar file",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    files,
+	})
+}
+
 func (h *FileHandler) DeleteFile(c *fiber.Ctx) error {
 	err := h.service.DeleteFile(c.Params("filename"))
 	if err != nil {

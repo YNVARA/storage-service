@@ -9,3 +9,4 @@ git clone https://github.com/Styxian-Legion/storage-service.git
 - [Golang](https://go.dev/)
 - [Go Fiber](https://gofiber.io/)
 - [Go Env](https://github.com/joho/godotenv)
+- [Go Gorm](https://gorm.io/)
