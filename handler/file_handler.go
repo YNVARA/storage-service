@@ -76,6 +76,57 @@ func (h *FileHandler) DeleteFile(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"success": true, "message": "deleted"})
 }
 
+func (h *FileHandler) ExportBackup(c *fiber.Ctx) error {
+	// 1. Panggil service untuk membuat file ZIP backup
+	// Service akan menggabungkan metadata database (JSON) dan file fisik
+	zipPath, err := h.service.ExportAll()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"error":   "Gagal membuat file backup: " + err.Error(),
+		})
+	}
+
+	// 2. Kirim file ke user untuk di-download
+	// Kita hapus file sementara setelah dikirim menggunakan callback jika perlu,
+	// atau biarkan tersimpan sebagai arsip lokal.
+	return c.Download(zipPath)
+}
+
+func (h *FileHandler) ImportBackup(c *fiber.Ctx) error {
+	// 1. Ambil file ZIP dari form-data
+	file, err := c.FormFile("backup")
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"success": false,
+			"error":   "File backup tidak ditemukan dalam request",
+		})
+	}
+
+	// 2. Simpan sementara file zip yang diupload
+	tempZip := "./temp_restore.zip"
+	if err := c.SaveFile(file, tempZip); err != nil {
+		return c.Status(500).JSON(fiber.Map{"success": false, "error": "Gagal menyimpan file sementara"})
+	}
+
+	// Pastikan file sementara dihapus setelah proses selesai
+	defer os.Remove(tempZip)
+
+	// 3. Panggil service untuk melakukan extraksi dan restore database
+	err = h.service.ImportAll(tempZip)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"error":   "Gagal melakukan restore: " + err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Data dan file berhasil dipulihkan",
+	})
+}
+
 // Helpers
 func getEnvAsInt64(key string, fallback int64) int64 {
 	if val, ok := os.LookupEnv(key); ok {

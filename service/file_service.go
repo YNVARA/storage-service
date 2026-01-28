@@ -1,8 +1,13 @@
 package service
 
 import (
+	"archive/zip"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"storage-service/domain"
 
 	"github.com/gofiber/fiber/v2"
@@ -109,4 +114,82 @@ func (s *FileService) DeleteFile(fileName string) error {
 	}
 	// Baru hapus fisiknya
 	return s.storage.Delete(fileName)
+}
+
+func (s *FileService) ExportAll() (string, error) {
+	zipPath := "backup_data.zip"
+
+	// 1. Ambil data dari Repository
+	data, err := s.repo.GetBackupData()
+	if err != nil {
+		return "", err
+	}
+
+	// 2. Buat file ZIP
+	newZipFile, err := os.Create(zipPath)
+	if err != nil {
+		return "", err
+	}
+	defer newZipFile.Close()
+
+	zipWriter := zip.NewWriter(newZipFile)
+	defer zipWriter.Close()
+
+	// 3. Masukkan Metadata JSON ke ZIP
+	jsonBytes, _ := json.MarshalIndent(data, "", "  ")
+	w1, _ := zipWriter.Create("metadata.json")
+	w1.Write(jsonBytes)
+
+	// 4. Masukkan seluruh isi folder ./uploads ke ZIP
+	err = filepath.Walk("./uploads", func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+
+		file, _ := os.Open(path)
+		defer file.Close()
+
+		w, _ := zipWriter.Create("files/" + filepath.Base(path))
+		io.Copy(w, file)
+		return nil
+	})
+
+	return zipPath, err
+}
+
+// ImportAll: Mengekstrak ZIP dan mengembalikan data ke DB & Folder
+func (s *FileService) ImportAll(zipPath string) error {
+	reader, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	var metadata []domain.FileEntity
+
+	for _, file := range reader.File {
+		// 1. Ekstrak Metadata JSON
+		if file.Name == "metadata.json" {
+			f, _ := file.Open()
+			json.NewDecoder(f).Decode(&metadata)
+			f.Close()
+		}
+
+		// 2. Ekstrak File Fisik ke folder ./uploads
+		if filepath.Dir(file.Name) == "files" {
+			f, _ := file.Open()
+			dstPath := filepath.Join("./uploads", filepath.Base(file.Name))
+			dst, _ := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+			io.Copy(dst, f)
+			dst.Close()
+			f.Close()
+		}
+	}
+
+	// 3. Masukkan ke Database melalui Repository
+	if len(metadata) > 0 {
+		return s.repo.RestoreData(metadata)
+	}
+
+	return fmt.Errorf("metadata tidak ditemukan dalam file backup")
 }

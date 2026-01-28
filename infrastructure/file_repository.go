@@ -4,6 +4,7 @@ import (
 	"storage-service/domain"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type fileRepository struct {
@@ -36,4 +37,28 @@ func (r *fileRepository) FindByName(name string) (*domain.FileEntity, error) {
 
 func (r *fileRepository) Delete(name string) error {
 	return r.db.Where("file_name = ?", name).Delete(&domain.FileEntity{}).Error
+}
+
+func (r *fileRepository) GetBackupData() ([]domain.FileEntity, error) {
+	var files []domain.FileEntity
+	// Menggunakan Unscoped agar data yang di-delete (soft delete) tetap ikut ter-backup
+	err := r.db.Unscoped().Find(&files).Error
+	return files, err
+}
+
+// RestoreData melakukan sinkronisasi data dari file backup ke database
+func (r *fileRepository) RestoreData(files []domain.FileEntity) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for _, file := range files {
+			err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "file_name"}}, // Sesuaikan dengan tag 'column:file_name' di domain
+				DoUpdates: clause.AssignmentColumns([]string{"original_name", "size", "content_type", "checksum", "updated_at", "deleted_at"}),
+			}).Create(&file).Error
+
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
