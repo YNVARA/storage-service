@@ -4,7 +4,7 @@
     "type": "module",
     "private": true,
     "scripts": {
-        "build": "bun build ./src/server.ts --target=node --outdir ./dist --minify && javascript-obfuscator dist --output dist",
+        "build": "rm -rf dist && mkdir -p dist && bun build ./src/server.ts --compile --minify --target=bun-linux-x64-modern --outfile ./dist/storage-service",
         "dev": "bun --watch ./src/server.ts",
         "start": "bun ./dist/server.js",
         "format": "prettier --write .",
