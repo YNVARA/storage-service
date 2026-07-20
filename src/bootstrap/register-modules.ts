@@ -6,8 +6,11 @@ import type { Module } from '../core/module';
 import { container } from '../core/container';
 
 // IMPORT MODULES DI SINI
+import {uploadModule} from '../module/upload';
 
-const modules: Module[] = [];
+const modules: Module[] = [
+    uploadModule
+];
 
 // STRATEGY CONFIG
 // TRUE = HARD FAIL | FALSE = SKIP

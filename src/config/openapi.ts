@@ -2,6 +2,9 @@ import { apiReference } from '@scalar/express-api-reference';
 import type { Express } from 'express';
 import { env } from './env';
 
+// docs
+import { uploadOpenApi } from '../module/upload/upload.openapi';
+
 export const setupOpenApi = (app: Express) => {
     const openApiSpecification = {
         openapi: '3.0.0',
@@ -28,6 +31,7 @@ export const setupOpenApi = (app: Express) => {
                     },
                 },
             },
+            ...uploadOpenApi.paths,
         },
         components: {
             securitySchemes: {
@@ -37,7 +41,9 @@ export const setupOpenApi = (app: Express) => {
                     bearerFormat: 'JWT',
                 },
             },
-            schemas: {},
+            schemas: {
+                ...uploadOpenApi.components.schemas,
+            },
         },
     };
 
