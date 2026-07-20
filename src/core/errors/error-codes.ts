@@ -1,0 +1,15 @@
+export const ErrorCodes = {
+    // CLIENT ERRORS (4xx)
+    BAD_REQUEST: 'BAD_REQUEST',
+    UNAUTHORIZED: 'UNAUTHORIZED',
+    FORBIDDEN: 'FORBIDDEN',
+    NOT_FOUND: 'NOT_FOUND',
+    CONFLICT: 'CONFLICT',
+
+    // SYSTEM ERRORS (5xx)
+    INTERNAL_ERROR: 'INTERNAL_ERROR',
+    DATABASE_ERROR: 'DATABASE_ERROR',
+    EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
+} as const;
+
+export type ErrorCode = keyof typeof ErrorCodes;
