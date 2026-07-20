@@ -36,15 +36,17 @@ export const uploadOpenApi = {
         schemas: {
             InitiateUploadRequest: {
                 type: 'object',
-                required: ['file_name', 'file_size', 'mime_type', 'total_chunks'],
+                required: ['original_file_name', 'file_size', 'mime_type', 'total_chunks'],
                 properties: {
-                    file_name: { type: 'string', minLength: 1, maxLength: 255 },
+                    original_file_name: { type: 'string', minLength: 1, maxLength: 255 },
+                    extension: { type: 'string', maxLength: 20 },
                     file_size: { type: 'integer', minimum: 1 },
                     mime_type: { type: 'string' },
                     total_chunks: { type: 'integer', minimum: 1 },
                 },
                 example: {
-                    file_name: 'example-video.mp4',
+                    original_file_name: 'example-video.mp4',
+                    extension: '.mp4',
                     file_size: 10485760,
                     mime_type: 'video/mp4',
                     total_chunks: 10,
